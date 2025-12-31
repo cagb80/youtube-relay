@@ -3,30 +3,46 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Permissions-Policy" content="ch-ua-form-factor">
     <title>YouTube Relay</title>
     <style>
         body, html { margin: 0; padding: 0; height: 100%; width: 100%; overflow: hidden; background-color: #000; }
-        iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     </style>
 </head>
 <body>
     <div id="player"></div>
 
     <script>
-        // Obtener el ID del video desde la URL (ejemplo: youtube.html?v=dQw4w9WgXcQ)
-        const urlParams = new URLSearchParams(window.location.search);
-        const videoId = urlParams.get('v');
+        // 1. Cargamos la API de YouTube de forma oficial
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-        if (videoId) {
-            document.getElementById('player').innerHTML = `
-                <iframe
-                    src="https://www.youtube-nocookie.com/embed/${videoId}?rel=0&enablejsapi=1"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowfullscreen>
-                </iframe>`;
-        } else {
-            document.body.innerHTML = "<p style='color:white;'>Error: No se proporcionó un ID de video.</p>";
+        const urlParams = new URLSearchParams(window.location.search);
+        const vID = urlParams.get('v');
+
+        var player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('player', {
+                videoId: vID,
+                host: 'https://www.youtube-nocookie.com', // Forzamos dominio de privacidad
+                playerVars: {
+                    'autoplay': 1,
+                    'rel': 0,
+                    'enablejsapi': 1,
+                    'origin': window.location.origin, // Crucial: indica quién aloja el video
+                    'widget_referrer': window.location.href
+                },
+                events: {
+                    'onReady': (event) => event.target.playVideo(),
+                    'onError': (e) => {
+                        if(e.data === 150 || e.data === 101) {
+                            console.error("El video no permite reproducción externa.");
+                        }
+                    }
+                }
+            });
         }
     </script>
 </body>
